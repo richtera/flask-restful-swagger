@@ -1437,7 +1437,7 @@ helpers = this.merge(helpers, Handlebars.helpers); data = data || {};
       _ref3 = this.model.apisArray;
       for (_i = 0, _len = _ref3.length; _i < _len; _i++) {
         resource = _ref3[_i];
-        id = resource.name;
+        id = resource.name.replace(/[.#$?=+-]/g, '_');
         while (typeof resources[id] !== 'undefined') {
           id = id + "_" + counter;
           counter += 1;
