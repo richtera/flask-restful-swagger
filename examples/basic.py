@@ -1,9 +1,17 @@
+'''
+Running:
+
+  PYTHONPATH=. python examples/basic.py
+
+'''
+
+
 from flask import Flask, redirect
 from flask.ext.restful import reqparse, abort, Api, Resource, fields,\
     marshal_with
 from flask_restful_swagger import swagger
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder='../static')
 
 ###################################
 # This is important:
@@ -11,7 +19,8 @@ api = swagger.docs(Api(app), apiVersion='0.1',
                    basePath='http://localhost:5000',
                    resourcePath='/',
                    produces=["application/json", "text/html"],
-                   api_spec_url='/api/spec')
+                   api_spec_url='/api/spec',
+                   description='A Basic API')
 ###################################
 
 TODOS = {
@@ -66,28 +75,53 @@ class Todo(Resource):
       ])
   def get(self, todo_id):
     # This goes into the summary
-    "Get a todo task"
-    abort_if_todo_doesnt_exist(todo_id)
-    return TODOS[todo_id]
+    """Get a todo task
 
+    This will be added to the <strong>Implementation Notes</strong>.
+    It lets you put very long text in your api.
+
+    Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod
+    tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim
+    veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea
+    commodo consequat. Duis aute irure dolor in reprehenderit in voluptate
+    velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat
+    cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id
+    est laborum.
+    """
+    abort_if_todo_doesnt_exist(todo_id)
+    return TODOS[todo_id], 200, {'Access-Control-Allow-Origin': '*'}
+
+  @swagger.operation(
+      notes='delete a todo item by ID',
+  )
   def delete(self, todo_id):
     abort_if_todo_doesnt_exist(todo_id)
     del TODOS[todo_id]
-    return '', 204
+    return '', 204, {'Access-Control-Allow-Origin': '*'}
 
+  @swagger.operation(
+      notes='edit a todo item by ID',
+  )
   def put(self, todo_id):
     args = parser.parse_args()
     task = {'task': args['task']}
     TODOS[todo_id] = task
-    return task, 201
+    return task, 201, {'Access-Control-Allow-Origin': '*'}
 
+  def options (self, **args):
+    # since this method is not decorated with @swagger.operation it does not
+    # get added to the swagger docs
+    return {'Allow' : 'GET,PUT,POST,DELETE' }, 200, \
+    { 'Access-Control-Allow-Origin': '*', \
+      'Access-Control-Allow-Methods': 'GET,PUT,POST,DELETE', \
+      'Access-Control-Allow-Headers': 'Content-Type' }
 
 # TodoList
 #   shows a list of all todos, and lets you POST to add new tasks
 class TodoList(Resource):
 
   def get(self):
-    return TODOS
+    return TODOS, 200, {'Access-Control-Allow-Origin': '*'}
 
   @swagger.operation(
       notes='Creates a new TODO item',
@@ -118,7 +152,7 @@ class TodoList(Resource):
     args = parser.parse_args()
     todo_id = 'todo%d' % (len(TODOS) + 1)
     TODOS[todo_id] = {'task': args['task']}
-    return TODOS[todo_id], 201
+    return TODOS[todo_id], 201, {'Access-Control-Allow-Origin': '*'}
 
 @swagger.model
 class ModelWithResourceFields:
@@ -140,6 +174,7 @@ class TodoItemWithResourceFields:
   resource_fields = {
       'a_string': fields.String(attribute='a_string_field_name'),
       'a_formatted_string': fields.FormattedString,
+      'an_enum': fields.String,
       'an_int': fields.Integer,
       'a_bool': fields.Boolean,
       'a_url': fields.Url,
@@ -152,14 +187,24 @@ class TodoItemWithResourceFields:
       'a_list_of_nested_types': fields.List(fields.Nested(ModelWithResourceFields.resource_fields)),
   }
 
+  # Specify which of the resource fields are required
+  required = ['a_string']
+
+  swagger_metadata = {
+      'an_enum': {
+          'enum': ['one', 'two', 'three']
+      }
+  }
+
 class MarshalWithExample(Resource):
   @swagger.operation(
       notes='get something',
       responseClass=TodoItemWithResourceFields,
       nickname='get')
   @marshal_with(TodoItemWithResourceFields.resource_fields)
-  def get(self):
-    return {}
+  def get(self, **kwargs):
+    return {}, 200,  {'Access-Control-Allow-Origin': '*'}
+
 
 ##
 ## Actually setup the Api resource routing here

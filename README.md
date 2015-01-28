@@ -24,7 +24,7 @@ app = Flask(__name__)
 
 ###################################
 # Wrap the Api with swagger.docs. It is a thin wrapper around the Api class that adds some swagger smarts
-api = swagger.docs(Api(app), version='0.1')
+api = swagger.docs(Api(app), apiVersion='0.1')
 ###################################
 
 
@@ -57,6 +57,16 @@ class Todo(Resource):
           ]
         )
     def get(self, todo_id):
+    
+# Operations not decorated with @swagger.operation do not get added to the swagger docs
+
+class Todo(Resource):
+    def options(self, todo_id):
+        """
+        I'm not visible in the swagger docs
+        """
+        pass
+
 
 # Then you add_resource as you usually would
 
@@ -188,6 +198,8 @@ resourcePath - same as before. default: '/'
 produces - same as before, passed directly to swagger. The default is ["application/json"]
 
 swaggerVersion - passed directly to swagger. Default: 1.2
+
+description - description of this API endpoint. Defaults to 'Auto generated API docs by flask-restful-swagger'
 ```
 
 # Accessing the result json spec and an Interactive HTML interface
